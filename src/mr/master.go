@@ -1,7 +1,6 @@
 package mr
 
 import (
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -56,7 +55,7 @@ func (m *Master) GetOneTask(args *TaskArgs, reply *TaskReply) error {
 	if task.IsAlive {
 		m.registerTask(args, task)
 	}
-	fmt.Print("Getting a Task for assigning it to worker")
+	log.Println("Getting a Task for assigning it to worker")
 	return nil
 }
 
@@ -64,7 +63,7 @@ func (m *Master) ReportTask(args *TaskReport, reply *TaskReply) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	fmt.Print("Task report in master")
+	log.Println("Task report in master")
 	if m.taskPhase != args.Phase || args.WorkerId != m.taskStatus[args.Seq].workerId {
 		return nil
 	}
@@ -108,7 +107,7 @@ func (m *Master) server() {
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
-	fmt.Print("Started listening for socket mr-socket")
+	log.Println("Started listening for socket mr-socket")
 	go http.Serve(l, nil)
 }
 
@@ -128,7 +127,7 @@ func (m *Master) initMapTask() {
 }
 
 const (
-	MAPTASK_TIMEOUT = time.Millisecond * 500
+	MAPTASK_TIMEOUT = time.Second * 30
 )
 
 const (
@@ -176,7 +175,7 @@ func (m *Master) schedule() {
 			m.taskStatus[index].status = QUEUED
 			m.taskChannel <- m.getTask(index)
 		default:
-			panic("Error while scheduling a Task")
+			log.Panic("Error while scheduling a Task")
 		}
 	}
 
@@ -185,6 +184,8 @@ func (m *Master) schedule() {
 			m.initReduceTask()
 		} else {
 			m.done = true
+			// stop the socket
+			os.Remove("mr-socket")
 		}
 	}
 
@@ -200,7 +201,7 @@ func (m *Master) getTask(index int) Task {
 		Phase:    m.taskPhase,
 		IsAlive:  true,
 	}
-	fmt.Printf("m: %+v, Task Seq: %d, len files: %d, len tasks: %d", m, index, len(m.files), len(m.taskStatus))
+	log.Printf("m: %+v, Task Seq: %d, len files: %d, len tasks: %d\n", m, index, len(m.files), len(m.taskStatus))
 
 	if task.Phase == MAP_PHASE {
 		task.Filename = m.files[index]
@@ -209,7 +210,7 @@ func (m *Master) getTask(index int) Task {
 }
 
 func (m *Master) initReduceTask() {
-	fmt.Print("Starting reduce Phase")
+	log.Println("Starting reduce Phase")
 	m.taskPhase = REDUCE_PHASE
 	m.taskStatus = make([]TaskStatus, m.nReduce)
 }
@@ -219,7 +220,7 @@ func (m *Master) registerTask(args *TaskArgs, task Task) {
 	defer m.mu.Unlock()
 
 	if task.Phase != m.taskPhase {
-		panic("The Task Phase reported by worker does not match with master Task Phase assignment to worker")
+		log.Panic("The Task Phase reported by worker does not match with master Task Phase assignment to worker")
 	}
 
 	m.taskStatus[task.Seq].status = RUNNING
@@ -232,8 +233,6 @@ func (m *Master) registerTask(args *TaskArgs, task Task) {
 // create a Master.
 //
 func MakeMaster(files []string, nReduce int) *Master {
-
-	fmt.Printf("In master")
 
 	m := Master{}
 
@@ -248,12 +247,12 @@ func MakeMaster(files []string, nReduce int) *Master {
 		m.taskChannel = make(chan Task, len(m.files))
 	}
 
-	fmt.Printf("Initializing map Task")
+	log.Println("Initializing map Task")
 	m.initMapTask()
 	go m.tickSchedule()
 
 	m.server()
-	fmt.Printf("Master process is started")
+	log.Println("Master process is started")
 
 	return &m
 }
