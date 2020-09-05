@@ -19,3 +19,17 @@ type ExampleReply struct {
 
 // Add your RPC definitions here.
 
+type TaskArgs struct {
+	WorkerId int
+}
+
+type TaskReply struct {
+	Task *Task
+}
+
+type TaskReport struct {
+	Done     bool
+	Seq      int
+	Phase    TaskPhase
+	WorkerId int
+}

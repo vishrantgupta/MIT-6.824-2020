@@ -18,7 +18,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	m := mr.MakeMaster(os.Args[1:], 10)
+	fmt.Printf("Starting master")
+	m := mr.MakeMaster(os.Args[1:], 1)
 	for m.Done() == false {
 		time.Sleep(time.Second)
 	}
