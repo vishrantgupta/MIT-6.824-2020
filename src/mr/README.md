@@ -1,3 +1,5 @@
+## Implementation of paper [MapReduce: Simplified Data Processing on Large Clusters](https://pdos.csail.mit.edu/6.824/papers/mapreduce.pdf)
+
 ### This is a distributed version of map reduce.
 - The master and worker accepts the map and reduce function that are under `../mrapps`
 - The worker will create one mapper for every file and an intermediate file for the reduce task
